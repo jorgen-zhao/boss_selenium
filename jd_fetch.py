@@ -9,12 +9,11 @@ from selenium.webdriver import Keys, ActionChains,ChromeOptions
 from datetime import datetime
 
 def close_windows():
-    #如果有登录弹窗，就关闭
+    
     try:
-        dr.implicitly_wait(20)#智能等待20秒，等待页面的元素加载出来后，就继续执行，下同
+        dr.implicitly_wait(20)
         if dr.find_element(By.XPATH,'//div[@class="boss-login-dialog"]//i[@class="icon-close"]'):
             dr.find_element(By.XPATH,'//div[@class="boss-login-dialog"]//i[@class="icon-close"]').click()
-            #13 14行代码的作用是判断是否有弹出登录框，如果弹出登录框则右上角的关闭按钮，若无则跳过执行并告知没有弹窗
     except:
         print('close_windows,没有弹窗')
 
@@ -24,77 +23,60 @@ columns=['岗位名称', '工作地址', '企业名称', '行业类型', '融资
 df = pd.DataFrame(columns=columns)
 def get_current_region_job(query, city_no):
     file_name = query+ "_" + city_no+ "_" + datetime.now().strftime("%Y%m%d%H%M%S")
-    global df  # 如果 df 是在函数外部定义的，确保在此处声明为全局变量
-    #该函数的作用是获取指定城市指定区域的岗位信息
+    global df
     flag = 0
     global dr
-    # 创建Chrome参数对象
     options = webdriver.ChromeOptions()
-    # 添加试验性参数
     options.add_experimental_option('excludeSwitches', ['enable-automation'])
     options.add_experimental_option('useAutomationExtension', False)
-    
-    # options = ChromeOptions()
-    # options.add_argument("--headless=new")  
     dr = webdriver.Chrome()
-    # 创建Chrome浏览器对象并传入参数
     dr.execute_cdp_cmd(
         'Page.addScriptToEvaluateOnNewDocument',
         {'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'}
     )
-    # 初始化webdriver
-    # 读取文件
     with open('stealth.min.js', 'r') as f:
         js = f.read()
-    # 调用函数在页面加载前执行脚本
     dr.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': js})
     
-    # 转到目标网址
-    dr.get("https://www.zhipin.com/web/geek/job?query={0}&city={1}&experience=106&scale=303,304,305,306&page=3".format(query, city_no))  # sz
+    
+    dr.get("https://www.zhipin.com/web/geek/job?query={0}&city={1}&experience=105&scale=303,304,305,306&page=8".format(query, city_no))  # sz
     print("打开网址")
     time.sleep(random.randint(3, 5))
     count = 0
     while (flag == 0):
         dr.implicitly_wait(5)
         time.sleep(random.randint(3, 5))
-        job_detail = dr.find_elements(By.XPATH,'//ul[@class="job-list-box"]/li')#这里是获取所有的岗位信息块
+        job_detail = dr.find_elements(By.XPATH,'//ul[@class="job-list-box"]/li')
         print("get job list")
         
         for job in job_detail:
-        # 岗位名称
             try:
                 dr.implicitly_wait(5)
-                job_title = job.find_element(By.CSS_SELECTOR, '.job-name').text#获取岗位名称
+                job_title = job.find_element(By.CSS_SELECTOR, '.job-name').text
                 print("job_title.....", job_title)
             except:
                 print("excepting job title.....")
                 continue
-            # 行业类型
             dr.implicitly_wait(5)
             job_industry = job.find_elements(by=By.CSS_SELECTOR, value=".company-tag-list")[0].text
             job_finance = job.find_elements(by=By.CSS_SELECTOR, value=".company-tag-list")[0].text
             
             try:
-                # 企业规模
                 job_scale = job.find_element(by=By.XPATH, value="./div[1]/div/div[2]/ul/li[3]").text.strip()
             except:
                 job_scale = "无"
             try:
-                # 企业福利
                 job_welfare = job.find_element(by=By.XPATH, value="./div[2]/div").text.strip()
             except:
                 job_welfare = '无'
             try:
-                # 薪资范围
-                job_salary_range = job.find_element(By.CSS_SELECTOR, '.salary').text  # 获取薪资
+                job_salary_range = job.find_element(By.CSS_SELECTOR, '.salary').text
             except:
                 job_salary_range = "无"
-            # 工作年限
             try:
                 job_experience = job.find_element(by=By.XPATH, value="./div[1]/a/div[2]/ul/li[1]").text.strip()
             except:
                 job_experience = "无"
-            # 学历要求
             try:
                 job_education = job.find_element(by=By.XPATH, value="./div[1]/a/div[2]/ul/li[2]").text.strip()
             except:
@@ -115,7 +97,6 @@ def get_current_region_job(query, city_no):
             time.sleep(random.randint(3, 5))
             close_windows()
             dr.implicitly_wait(5)
-            # 工作地址
             try:
                 job_keywords = ','.join(
                     [skill.text.strip() for skill in dr.find_elements(by=By.CSS_SELECTOR, value=".job-keyword-list")])
@@ -123,7 +104,7 @@ def get_current_region_job(query, city_no):
                 job_keywords = '无'
             if (job_salary_range == "无"):
                 try:
-                    job_salary_range = job.find_element(By.CSS_SELECTOR, '.salary').text  # 获取薪资
+                    job_salary_range = job.find_element(By.CSS_SELECTOR, '.salary').text
                 except:
                     job_salary_range = "无"
             
@@ -225,7 +206,6 @@ def get_current_region_job(query, city_no):
                 "公司地址": location_address,
                 }
 
-            # 关闭详情页
             dr.close()
             dr.switch_to.window(dr.window_handles[0])
             
@@ -239,20 +219,18 @@ def get_current_region_job(query, city_no):
 
             time.sleep(random.randint(2, 5))
 
-        #点击下一页
         try:
             dr.implicitly_wait(20)
-            cur_page_num=dr.find_element(By.XPATH,'//div[@class="options-pages"]//a[@class="selected"]').text#当前所在页面的按钮上的数字
+            cur_page_num=dr.find_element(By.XPATH,'//div[@class="options-pages"]//a[@class="selected"]').text
             print('cur_page_num:',cur_page_num)
-            #点击下一页
             dr.implicitly_wait(20)
-            element = dr.find_element(By.XPATH,'//i[@class="ui-icon-arrow-right"]')#找到点击下一页的按钮
+            element = dr.find_element(By.XPATH,'//i[@class="ui-icon-arrow-right"]')
             dr.implicitly_wait(20)
             dr.execute_script("arguments[0].click();", element)
             dr.implicitly_wait(20)
-            new_page_num=dr.find_element(By.XPATH,'//div[@class="options-pages"]//a[@class="selected"]').text#点击下一页按钮后，当前所在页面的按钮上的数字
+            new_page_num=dr.find_element(By.XPATH,'//div[@class="options-pages"]//a[@class="selected"]').text
             print('new_page_num',new_page_num)
-            if cur_page_num==new_page_num:#如果当前页面与最新页面的数字一致，则表示已经是最后一页，跳出循环
+            if cur_page_num==new_page_num:
                 flag = 1
                 break
            
@@ -261,8 +239,8 @@ def get_current_region_job(query, city_no):
             break
 
 if __name__ == '__main__':
-    program_start_time = time.time()  # 记录开始时间
-    get_current_region_job('Java 物联网','101280600')#北京
-    program_end_time = time.time()  # 记录开始时间
+    program_start_time = time.time()  
+    get_current_region_job('STM32','101280600')
+    program_end_time = time.time()
     elapsed_time = program_end_time - program_start_time  
     print(f"程序总耗时：{elapsed_time}秒")
